@@ -23,7 +23,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.example.photoviewer.Post;
 import com.example.photoviewer.DataHolder;
@@ -157,8 +159,40 @@ public class MainActivity extends AppCompatActivity {
                 if (result.posts.isEmpty()) { // .images에서 .posts로 변경
                     textView.setText("불러올 이미지가 없습니다.");
                 } else {
-                    textView.setText("이미지 갤러리\n (새로 게시한 이미지를 확인하기 위해 동기화 버튼을 또 눌러주세요.)");
-                    Toast.makeText(MainActivity.this, "이미지 로드 완료!", Toast.LENGTH_LONG).show();
+                    // 이전 동기화 내역 가져오기
+                    Set<String> previousUrls = DataHolder.getInstance().getPreviousImageUrls();
+                    
+                    // 현재 이미지 URL들을 Set으로 수집
+                    Set<String> currentUrls = new HashSet<>();
+                    for (Post post : result.posts) {
+                        if (post.getImageUrl() != null && !post.getImageUrl().isEmpty()) {
+                            currentUrls.add(post.getImageUrl());
+                        }
+                    }
+                    
+                    // 새로운 이미지 URL 찾기 (이전에 없던 것들)
+                    Set<String> newImageUrls = new HashSet<>();
+                    for (String url : currentUrls) {
+                        if (!previousUrls.contains(url)) {
+                            newImageUrls.add(url);
+                        }
+                    }
+                    
+                    // 새 이미지 개수 표시
+                    int newCount = newImageUrls.size();
+                    if (newCount > 0) {
+                        textView.setText("이미지 갤러리\n (새로운 이미지 " + newCount + "개가 추가되었습니다!)");
+                        Toast.makeText(MainActivity.this, "새 이미지 " + newCount + "개 발견!", Toast.LENGTH_LONG).show();
+                    } else {
+                        textView.setText("이미지 갤러리\n (새로 게시한 이미지를 확인하기 위해 동기화 버튼을 또 눌러주세요.)");
+                        Toast.makeText(MainActivity.this, "이미지 로드 완료!", Toast.LENGTH_LONG).show();
+                    }
+                    
+                    // 새 이미지 URL을 DataHolder에 저장
+                    DataHolder.getInstance().setNewImageUrls(newImageUrls);
+                    
+                    // 이전 URL 목록을 현재 목록으로 업데이트
+                    DataHolder.getInstance().setPreviousImageUrls(currentUrls);
 
                     // 추가: DataHolder Singleton에 전체 Post 리스트 저장
                     DataHolder.getInstance().setPostList(result.posts);
@@ -167,6 +201,9 @@ public class MainActivity extends AppCompatActivity {
 
                     // 수정: ImageAdapter 생성자에 Context와 Post 리스트 전달
                     ImageAdapter adapter = new ImageAdapter(MainActivity.this, result.posts);
+                    
+                    // 새 이미지 URL 목록을 어댑터에 전달
+                    adapter.setNewImageUrls(newImageUrls);
 
                     recyclerView.setLayoutManager(new LinearLayoutManager(MainActivity.this));
                     recyclerView.setAdapter(adapter);
