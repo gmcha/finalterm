@@ -2,16 +2,18 @@ import os
 import cv2
 import pathlib
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 
 class ChangeDetection:
     result_prev = []
-    HOST = 'https://gmcha.pythonanywhere.com' #'http://10.0.2.2:8000'
+    HOST = 'https://gamincha.pythonanywhere.com' #'http://10.0.2.2:8000'
     username = 'admin'
     password = 'finalterm'
     token = ''
     title = ''
     text = ''
+    last_post_time = None  # 마지막 게시 시간
+    POST_INTERVAL = timedelta(minutes=3)  # 게시 간격: 3분
 
     def __init__(self, names):
         self.result_prev = [0 for i in range(len(names))]
@@ -25,41 +27,41 @@ class ChangeDetection:
         print(self.token)
 
     def add(self, names, detected_current, save_dir, image):
+        # names가 딕셔너리일 수 있으므로 리스트로 변환
+        names_list = list(names.values()) if isinstance(names, dict) else names
+        
         self.title = ''
         self.text = ''
         change_flag = 0
-        newly_detected_names = [] #added
+        newly_detected_names = []
 
         i = 0
         while i < len(self.result_prev):
             if self.result_prev[i]==0 and detected_current[i]==1 :
                 change_flag = 1
-                # self.title = names[i]
-                # self.text += names[i] + ", "
-                newly_detected_names.append(names[i]) # added
+                newly_detected_names.append(names_list[i])
             i += 1
 
         self.result_prev = detected_current[:]
 
-        if change_flag==0:
-            return
-
-        # -- added --
-        if 'book' in newly_detected_names:
-            self.title = "book!"
-            self.text = "book! 책이 등장했습니다. 빨리 가지러 가세요."
-        else:
-            self.title = newly_detected_names[0] 
-            self.text = ", ".join(newly_detected_names) + " (이)가 새로 검출되었습니다."
-        # --- 
-
-        # if change_flag==1:
-        #     self.send(save_dir, image)
-        self.send(save_dir, image) # added
+        # book이 현재 감지되어 있으면 서버에 게시
+        if 'book' in names_list:
+            book_idx = names_list.index('book')
+            print(f"[DEBUG] book index: {book_idx}, detected: {detected_current[book_idx]}")
+            if detected_current[book_idx] == 1:
+                print("[DEBUG] book 감지됨! send 호출")
+                self.title = "book!"
+                self.text = "반납대에 책이 있습니다. 빨리 책을 제자리에 꽂아주세요."
+                self.send(save_dir, image)
 
     def send(self, save_dir, image):
         now = datetime.now()
-        now.isoformat()
+        # 3분이 안 지났으면 게시 안 함
+        if self.last_post_time and (now - self.last_post_time) < self.POST_INTERVAL:
+            print(f"[DEBUG] 3분 제한: 마지막 게시 {self.last_post_time}, 현재 {now}")
+            return
+        print(f"[DEBUG] 서버에 게시 시작!")
+        self.last_post_time = now
         
         today = datetime.now()
         save_path = os.getcwd() / save_dir / 'detected' / str(today.year) / str(today.month) / str(today.day) 
