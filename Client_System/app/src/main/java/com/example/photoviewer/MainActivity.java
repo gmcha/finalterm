@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import com.example.photoviewer.Post;
@@ -32,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
 
     ImageView imgView;
     TextView textView;
-    String site_url = "https://gmcha.pythonanywhere.com"; //"http://10.0.2.2:8000"
+    String site_url = "https://gamincha.pythonanywhere.com"; //"http://10.0.2.2:8000"
     JSONObject post_json;
     String imageUrl = null;
     // Bitmap bmImg = null;
@@ -136,6 +137,10 @@ public class MainActivity extends AppCompatActivity {
                         // 수정: Post 객체를 생성 후 사용
                         postList.add(new Post(title, text, imageUrl, imageBitmap));
                     }
+                    
+                    // 최신순으로 정렬 (리스트를 역순으로)
+                    Collections.reverse(postList);
+                    
                     return new ImageLoadResult(postList);
                 } else {
                     return new ImageLoadResult("서버 응답 오류: " + responseCode);
