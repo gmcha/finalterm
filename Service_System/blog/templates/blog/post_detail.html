@@ -8,9 +8,17 @@
             </div>
         {% endif %}
         {% if user.is_authenticated %}
-            <a class="btn btn-default" href="{% url 'post_edit' pk=post.pk %}">
-                <span class="glyphicon glyphicon-pencil"></span>
-            </a>
+            <div class="post-actions">
+                <a class="btn btn-default" href="{% url 'post_edit' pk=post.pk %}">
+                    <span class="glyphicon glyphicon-pencil"></span>
+                </a>
+                <form method="POST" action="{% url 'post_delete' pk=post.pk %}" style="display: inline;" onsubmit="return confirm('정말로 이 글을 삭제하시겠습니까?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <span class="glyphicon glyphicon-trash"></span>
+                    </button>
+                </form>
+            </div>
         {% endif %}
         <h1>{{ post.title }}</h1>
         <p>{{ post.text|linebreaksbr }}</p>

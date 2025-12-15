@@ -42,6 +42,20 @@ def post_edit(request, pk):
         form = PostForm(instance=post)
     return render(request, 'blog/post_edit.html', {'form': form})
 
+def post_delete(request, pk):
+    post = get_object_or_404(Post, pk=pk)
+    if request.method == "POST":
+        post.delete()
+        return redirect('post_list')
+    return render(request, 'blog/post_detail.html', {'post': post})
+
+def post_bulk_delete(request):
+    if request.method == "POST":
+        post_ids = request.POST.getlist('post_ids')
+        if post_ids:
+            Post.objects.filter(pk__in=post_ids).delete()
+    return redirect('post_list')
+
 class blogImage(viewsets.ModelViewSet):
     queryset = Post.objects.all()
     serializer_class = PostSerializer
